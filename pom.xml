@@ -43,8 +43,6 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 
-        <test.dns.server>testsites</test.dns.server>
-        <!--<test.dns.server>8.8.8.8</test.dns.server>-->
 
         <org.jwat.version>1.1.1</org.jwat.version>
 
@@ -220,7 +218,6 @@
                                         </network>
                                         <ports>
                                             <port>+db.host:db.port:28015</port>
-                                            <port>+dbgui.host:dbgui.port:8080</port>
                                         </ports>
                                         <volumes>
                                             <bind>
@@ -260,7 +257,6 @@
                                         <env>
                                             <DB_HOST>db</DB_HOST>
                                             <DB_USER>admin</DB_USER>
-                                            <DB_PASSWORD></DB_PASSWORD>
                                         </env>
                                         <log>
                                             <enabled>true</enabled>
@@ -286,18 +282,10 @@
                                         <ports>
                                             <port>+browser.host:browser.port:3000</port>
                                         </ports>
-                                        <dependsOn>
-                                            <container>db-initializer</container>
-                                        </dependsOn>
                                         <env>
                                             <DEBUG>browserless/chrome</DEBUG>
                                             <CONNECTION_TIMEOUT>60000</CONNECTION_TIMEOUT>
                                         </env>
-                                        <volumes>
-                                            <bind>
-                                                <volume>harvester-workdir:/data</volume>
-                                            </bind>
-                                        </volumes>
                                         <log>
                                             <enabled>true</enabled>
                                         </log>
@@ -327,7 +315,9 @@
                                         </ports>
                                         <dependsOn>
                                             <container>db-initializer</container>
-                                            <container>dnsresolver</container>
+                                            <container>contentwriter</container>
+                                            <container>frontier</container>
+                                            <container>robots</container>
                                         </dependsOn>
                                         <volumes>
                                             <bind>
@@ -345,9 +335,6 @@
                                             <PROXY_HOST>recorderproxy</PROXY_HOST>
                                             <PROXY_PORT>9900</PROXY_PORT>
                                             <MAX_OPEN_SESSIONS>3</MAX_OPEN_SESSIONS>
-                                            <JAVA_OPTS>
-                                                -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005
-                                            </JAVA_OPTS>
                                         </env>
                                         <log>
                                             <enabled>true</enabled>
@@ -375,6 +362,7 @@
                                             <container>db-initializer</container>
                                             <container>dnsresolver</container>
                                             <container>harvester</container>
+                                            <container>cache</container>
                                             <container>contentwriter</container>
                                         </dependsOn>
                                         <env>
@@ -425,13 +413,11 @@
                                         </volumes>
                                         <env>
                                             <DNS_SERVERS>dnsresolver</DNS_SERVERS>
-                                            <!--<DNS_SERVERS>8.8.8.8 8.8.4.4</DNS_SERVERS>-->
                                         </env>
                                         <log>
                                             <enabled>false</enabled>
                                         </log>
                                         <dependsOn>
-                                            <container>testsites</container>
                                             <container>dnsresolver</container>
                                         </dependsOn>
                                         <wait>
@@ -529,6 +515,8 @@
                                         </ports>
                                         <dependsOn>
                                             <container>db-initializer</container>
+                                            <container>robots</container>
+                                            <container>dnsresolver</container>
                                         </dependsOn>
                                         <env>
                                             <DB_HOST>db</DB_HOST>
@@ -560,12 +548,7 @@
                                         </ports>
                                         <dependsOn>
                                             <container>db-initializer</container>
-                                            <container>robots</container>
-                                            <container>dnsresolver</container>
                                             <container>frontier</container>
-                                            <container>browser</container>
-                                            <container>contentwriter</container>
-                                            <container>testsites</container>
                                         </dependsOn>
                                         <env>
                                             <DB_HOST>db</DB_HOST>
@@ -601,6 +584,8 @@
                                         </ports>
                                         <dependsOn>
                                             <container>db-initializer</container>
+                                            <container>contentwriter</container>
+                                            <container>testsites</container>
                                         </dependsOn>
                                         <env>
                                             <DB_HOST>db</DB_HOST>
@@ -608,14 +593,18 @@
                                             <DB_PASSWORD></DB_PASSWORD>
                                             <CONTENT_WRITER_HOST>contentwriter</CONTENT_WRITER_HOST>
                                             <CONTENT_WRITER_PORT>8080</CONTENT_WRITER_PORT>
-                                            <DNS_SERVER>${test.dns.server}</DNS_SERVER>
+                                            <DNS_SERVER>testsites</DNS_SERVER>
                                         </env>
                                         <log>
                                             <enabled>true</enabled>
                                         </log>
                                         <wait>
-                                            <log>CoreDNS.*</log>
-                                            <time>30000</time>
+                                            <tcp>
+                                                <mode>mapped</mode>
+                                                <ports>
+                                                    <port>53</port>
+                                                </ports>
+                                            </tcp>
                                         </wait>
                                     </run>
                                 </image>
@@ -633,9 +622,6 @@
                                         <ports>
                                             <port>+robots.host:robots.port:50053</port>
                                         </ports>
-                                        <dependsOn>
-                                            <container>db-initializer</container>
-                                        </dependsOn>
                                         <env>
                                             <PROXY_HOST>recorderproxy</PROXY_HOST>
                                             <PROXY_PORT>9900</PROXY_PORT>
@@ -644,8 +630,12 @@
                                             <enabled>true</enabled>
                                         </log>
                                         <wait>
-                                            <log>Veidemann Robots Evaluator .* started</log>
-                                            <time>30000</time>
+                                            <tcp>
+                                                <mode>mapped</mode>
+                                                <ports>
+                                                    <port>50053</port>
+                                                </ports>
+                                            </tcp>
                                         </wait>
                                     </run>
                                 </image>
@@ -674,7 +664,6 @@
                                                     <port>53</port>
                                                 </ports>
                                             </tcp>
-                                            <time>30000</time>
                                         </wait>
                                     </run>
                                 </image>
@@ -686,18 +675,10 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <systemPropertyVariables>
-                                <browser.host>${browser.host}</browser.host>
-                                <browser.port>${browser.port}</browser.port>
                                 <db.host>${db.host}</db.host>
                                 <db.port>${db.port}</db.port>
-                                <harvester.host>${harvester.host}</harvester.host>
-                                <harvester.port>${harvester.port}</harvester.port>
                                 <controller.host>${controller.host}</controller.host>
                                 <controller.port>${controller.port}</controller.port>
-                                <robots.host>${robots.host}</robots.host>
-                                <robots.port>${robots.port}</robots.port>
-                                <frontier.host>${frontier.host}</frontier.host>
-                                <frontier.port>${frontier.port}</frontier.port>
                                 <contentwriter.host>${contentwriter.host}</contentwriter.host>
                                 <contentwriter.port>${contentwriter.port}</contentwriter.port>
                                 <contentexplorer.host>${contentexplorer.host}</contentexplorer.host>
